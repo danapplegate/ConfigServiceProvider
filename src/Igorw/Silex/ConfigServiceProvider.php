@@ -39,6 +39,7 @@ class ConfigServiceProvider implements ServiceProviderInterface
         }
 
         $config = json_decode(file_get_contents($this->filename), true);
+		var_dump($config);
 
         if (null === $config) {
             throw new \InvalidArgumentException(
@@ -46,24 +47,22 @@ class ConfigServiceProvider implements ServiceProviderInterface
         }
 
         foreach ($config as $name => $value) {
-            $app[$name] = $this->doReplacements($value);
+            $app[$name] = $this->doReplacements($app, $value, $name.'.');
         }
     }
 
-    private function doReplacements($value)
+    private function &doReplacements(Application $app, $value, $path = '')
     {
-        if (!$this->replacements) {
-            return $value;
-        }
-
         if (is_array($value)) {
             foreach ($value as $k => $v) {
-                $value[$k] = $this->doReplacements($v);
+				$newpath = $path . $k;
+				$app[$newpath] = $value[$k] = &$this->doReplacements($app, $v, $newpath . '.');
             }
 
             return $value;
         }
 
-        return strtr($value, $this->replacements);
+		$newvalue = strtr($value, $this->replacements); 
+        return $newvalue;
     }
 }
